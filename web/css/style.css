@@ -1,3 +1,26 @@
 .sideMenu {
     width: 20%;
 }
+
+.addFieldDragElement {
+    border-radius: 4px;
+    background-color: lightgray;
+    border: 1px solid black;
+    padding: 4px;
+    margin: 4px;
+    cursor: move;
+}
+
+.formBuilderInput {
+    border-radius: 4px;
+    padding: 4px;
+    cursor: move !important;
+}
+
+.dropArea {
+    height: 100px;
+    border: 1px dashed black;
+    text-align: center;
+    border-radius: 4px;
+    margin-top: 10px;
+}

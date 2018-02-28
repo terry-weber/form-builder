@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import ReactDOM from 'react-dom';
+import {Link} from 'react-router-dom';
 import { DropTarget, DragDropContext, DragSource } from 'react-dnd';
 import HTML5Backend from 'react-dnd-html5-backend';
 import _ from 'underscore';
@@ -85,15 +85,35 @@ function collectFormElement(connect, monitor) {
 }
 
 class FormElement extends Component {
+    removeElement(e) {
+        let order = null;
+        elements = _.reject(elements, (item) => {
+            let found = false;
+            if(item._id == this.props._id) {
+                order = item.order;
+                found = true;
+            }
+            return found;
+        });
+
+        for(let i=0; i<elements.length; i++) {
+            if(elements[i].order > order) {
+                elements[i].order--;
+            }
+        }
+        emitChange();
+    }
+
     render() {
         const { connectDragSource, isDragging } = this.props;
         return connectDragSource(
-            <div style={{
-                fontSize: 25,
-                fontWeight: 'bold',
-                cursor: 'move'
-            }}>
-                {this.props.name}
+            <div className="formBuilderInput">
+                <label style={{cursor: "move"}}>{this.props.label} <span style={{display: this.props.required ? 'inline-block' : 'none'}}>*</span></label>
+                <a style={{float: "right", color: "red", fontSize: "18px", fontWeight: "bold"}} href="javascript:void(0)" onClick={this.removeElement.bind(this)}>&times;</a>
+
+                <div>
+                    <input style={{cursor: "move"}} className="form-control" type="text" disabled placeholder={this.props.name}/>
+                </div>
             </div>
         )
 
@@ -120,7 +140,8 @@ const newFieldDragSource = {
                 name: props.name,
                 _id:props._id,
                 label: props.label,
-                order: dropOrder
+                order: dropOrder,
+                required: props.required
             });
 
             emitChange();
@@ -139,7 +160,7 @@ class NewField extends Component {
     render() {
         const { connectDragSource } = this.props;
         return connectDragSource (
-            <div>
+            <div className="addFieldDragElement">
                 {this.props.children}
             </div>
         )
@@ -156,7 +177,7 @@ class DropArea extends Component {
 
         return connectDropTarget(
             <div style={{
-                border: '1px solid black'
+                border: '1px 1px 1px 0px solid black'
             }}>
                 {this.props.children}
             </div>
@@ -166,11 +187,17 @@ class DropArea extends Component {
 
 DropArea = DropTarget([ItemTypes.FORM_ELEMENT, ItemTypes.NEW_FIELD], elementDropTarget, collectDropTarget)(DropArea);
 
-class Board extends Component {
+class FormBuilder extends Component {
     renderFormElement(element) {
         return (
             <DropArea key={element.order} order={element.order}>
-                <FormElement name={element.name} order={element.order} _id={element._id} label={element.label}/>
+                <FormElement
+                    name={element.name}
+                    order={element.order}
+                    _id={element._id}
+                    label={element.label}
+                    required={element.required}
+                />
             </DropArea>
         )
     }
@@ -185,31 +212,43 @@ class Board extends Component {
             formElements.push(this.renderFormElement(sortedElements[i]))
         }
 
-        console.log(sortedElements)
-
         formElements.push(
             <DropArea order={this.props.formElements.length} key={this.props.formElements.length}>
-                <div style={{height: "100px"}}></div>
+                <div className="dropArea">drop fields here</div>
             </DropArea>
         );
 
         return (
             <div>
-                <div style={{width: "20%", float: 'left'}}>
-                    {this.props.fields.map((item, index) => {
-                        for(let i=0; i<this.props.formElements.length; i++) {
-                            if(this.props.formElements[i]._id == item._id) {
-                                return;
+                <div style={{width: "20%", float: 'left', padding: '10px'}}>
+                    <h4>Drag Fields To Add:</h4>
+                    {this.props.fields.length ?
+                        this.props.fields.map((item, index) => {
+                            for(let i=0; i<this.props.formElements.length; i++) {
+                                if(this.props.formElements[i]._id == item._id) {
+                                    return;
+                                }
                             }
-                        }
-                        return (
-                            <NewField _id={item._id} name={item.name} label={item.label} key={index}>
-                                <div key={index}>{item.name}</div>
-                            </NewField>
-                        )
-                    })}
+                            return (
+                                <NewField
+                                    _id={item._id}
+                                    name={item.name}
+                                    label={item.label}
+                                    key={index}
+                                    required={item.required}
+                                >
+                                    <div key={index}>{item.name}</div>
+                                </NewField>
+                            )
+                        }) :
+                        <div>no fields defined. <Link to="/create-field">define a field</Link></div>
+                    }
                 </div>
-                <div style={{float: 'right', width: '80%'}}>
+                <div style={{float: 'right', width: '80%', paddingTop: "10px"}}>
+                    <h4>Form Title:</h4>
+                    <input placeholder="enter a form title" type="text" className="form-control" value={this.props.title} onChange={this.props.titleChange}/>
+                    <hr/>
+                    <h4>Form Fields:</h4>
                     {formElements}
                 </div>
             </div>
@@ -217,15 +256,17 @@ class Board extends Component {
     }
 }
 
-Board = DragDropContext(HTML5Backend)(Board);
+FormBuilder = DragDropContext(HTML5Backend)(FormBuilder);
 
-export default class Game extends Component {
+export default class FormBuilderWrapper extends Component {
     constructor(props) {
         super(props);
 
         this.state = {
             formElements: [],
-            fields: []
+            fields: [],
+            title: '',
+            error: false
         };
         this.unobserve = observe(this.handleChange.bind(this))
     }
@@ -248,13 +289,56 @@ export default class Game extends Component {
         this.setState({formElements: formElements})
     }
 
+    titleChange(e) {
+        this.setState({title: e.target.value});
+    }
+
+    saveLayout(e) {
+        let hasRequiredField = false;
+        for(let i=0; i<this.state.formElements.length; i++) {
+            if(this.state.formElements[i].required) {
+                hasRequiredField = true;
+                break;
+            }
+        }
+
+        if(this.state.title.trim() == '' || !hasRequiredField) {
+            this.setState({error: true}, () => {
+                setTimeout(() => {
+                    this.setState({error: false})
+                }, 3000);
+            })
+        }
+
+        return;
+        e.target.disabled = false;
+
+        let formSchema = {
+            title: this.state.title
+        };
+
+    }
+
     componentWillUnmount() {
         this.unobserve();
     }
 
     render() {
         return (
-            <Board formElements={this.state.formElements} fields={this.state.fields}/>
+            <div>
+                <div style={{overflow: "auto"}}>
+                    <FormBuilder
+                        formElements={this.state.formElements}
+                        fields={this.state.fields}
+                        title={this.state.title}
+                        titleChange={this.titleChange.bind(this)}
+                    />
+                </div>
+                <div style={{marginTop: "10px", marginLeft: "20%"}}>
+                    <button className="btn btn-primary" onClick={this.saveLayout.bind(this)}>Save</button>
+                    <div style={{color: "red", display: this.state.error ? 'block' : 'none'}}>form must have a title and at least one required field</div>
+                </div>
+            </div>
         )
     }
 }

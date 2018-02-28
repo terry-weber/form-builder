@@ -10,16 +10,12 @@ var ItemTypes = {
 };
 
 
-let elements = [
-    {name: 'word 0', order: 0, id: 0},
-    {name: 'word 1', order: 1, id: 1},
-    {name: 'word 2', order: 2, id: 2}
-];
+let elements = [];
 
 let observer = null;
 
 function emitChange() {
-    observer(elements)
+    observer(elements);
 }
 
 function observe(o) {
@@ -52,23 +48,17 @@ function collectDropTarget(connect, monitor) {
 
 const elementDragSource = {
     beginDrag(props, monitor, component) {
-        const node = ReactDOM.findDOMNode(component).getBoundingClientRect();
-        const width = node.width;
-        const height = node.height;
-        return {order: props.order, width: width, height: height};
+        return {order: props.order};
     },
     endDrag(props, moniter, component) {
         if(moniter.getDropResult() != null) {
-            const id = props.id;
+            const id = props._id;
             const dragOrder = props.order;
             const dropOrder = moniter.getDropResult().order;
 
-            console.log(dragOrder)
-            console.log(dropOrder)
-
             for(var i=0; i<elements.length; i++) {
                 //set order of dragged element to drop target order or 1 less if in the empty drop zone
-                if(elements[i].id == id) {
+                if(elements[i]._id == id) {
                     elements[i].order = dropOrder == elements.length ? dropOrder-1 : dropOrder;
                 }
                 //dragged element is moved up so decrement order of elements above initial position
@@ -112,6 +102,39 @@ class FormElement extends Component {
 
 FormElement = DragSource(ItemTypes.FORM_ELEMENT, elementDragSource, collectFormElement)(FormElement);
 
+const newFieldDragSource = {
+    beginDrag(props, monitor, component) {
+        return props;
+    },
+    endDrag(props, moniter, component) {
+        if(moniter.getDropResult() != null) {
+            let dropOrder = moniter.getDropResult().order;
+            for(let i=0; i<elements.length; i++) {
+                //increment order of elements above drop position
+                if(elements[i].order >= dropOrder) {
+                    elements[i].order++;
+                }
+            }
+
+            elements.push({
+                name: props.name,
+                _id:props._id,
+                label: props.label,
+                order: dropOrder
+            });
+
+            emitChange();
+        }
+    }
+};
+
+function collectNewField(connect, monitor) {
+    return {
+        connectDragSource: connect.dragSource(),
+        isDragging: monitor.isDragging()
+    }
+}
+
 class NewField extends Component {
     render() {
         const { connectDragSource } = this.props;
@@ -124,7 +147,7 @@ class NewField extends Component {
 
 }
 
-NewField =  DragSource(ItemTypes.NEW_FIELD, elementDragSource, collectFormElement)(NewField);
+NewField =  DragSource(ItemTypes.NEW_FIELD, newFieldDragSource, collectNewField)(NewField);
 
 class DropArea extends Component {
 
@@ -144,52 +167,50 @@ class DropArea extends Component {
 DropArea = DropTarget([ItemTypes.FORM_ELEMENT, ItemTypes.NEW_FIELD], elementDropTarget, collectDropTarget)(DropArea);
 
 class Board extends Component {
-    renderSquare(element) {
+    renderFormElement(element) {
         return (
             <DropArea key={element.order} order={element.order}>
-                <FormElement name={element.name} order={element.order} id={element.id}/>
+                <FormElement name={element.name} order={element.order} _id={element._id} label={element.label}/>
             </DropArea>
         )
     }
 
     render() {
-        const sortedElements = _.sortBy(this.props.elements, (item) => {
-            console.log(item);
+        const sortedElements = _.sortBy(this.props.formElements, (item) => {
             return item.order;
         });
 
-        console.log(sortedElements);
-
-        const squares = [];
+        const formElements = [];
         for (let i = 0; i < sortedElements.length; i++) {
-            squares.push(this.renderSquare(sortedElements[i]))
+            formElements.push(this.renderFormElement(sortedElements[i]))
         }
 
+        console.log(sortedElements)
 
-        squares.push(
-            <DropArea order={this.props.elements.length} key={this.props.elements.length}>
+        formElements.push(
+            <DropArea order={this.props.formElements.length} key={this.props.formElements.length}>
                 <div style={{height: "100px"}}></div>
             </DropArea>
         );
-
-
-        console.log(squares);
-
-        console.log(this.props.elements);
 
         return (
             <div>
                 <div style={{width: "20%", float: 'left'}}>
                     {this.props.fields.map((item, index) => {
+                        for(let i=0; i<this.props.formElements.length; i++) {
+                            if(this.props.formElements[i]._id == item._id) {
+                                return;
+                            }
+                        }
                         return (
-                            <NewField>
+                            <NewField _id={item._id} name={item.name} label={item.label} key={index}>
                                 <div key={index}>{item.name}</div>
                             </NewField>
                         )
                     })}
                 </div>
                 <div style={{float: 'right', width: '80%'}}>
-                    {squares}
+                    {formElements}
                 </div>
             </div>
         );
@@ -203,7 +224,7 @@ export default class Game extends Component {
         super(props);
 
         this.state = {
-          elements: elements,
+            formElements: [],
             fields: []
         };
         this.unobserve = observe(this.handleChange.bind(this))
@@ -223,17 +244,17 @@ export default class Game extends Component {
         this.setState({fields: fields});
     }
 
-    handleChange(newElements) {
-        this.setState({elements: newElements})
+    handleChange(formElements) {
+        this.setState({formElements: formElements})
     }
 
     componentWillUnmount() {
-        this.unobserve()
+        this.unobserve();
     }
 
     render() {
         return (
-            <Board elements={this.state.elements} fields={this.state.fields}/>
+            <Board formElements={this.state.formElements} fields={this.state.fields}/>
         )
     }
 }

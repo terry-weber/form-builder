@@ -5,6 +5,7 @@ import CreateField from './CreateField';
 import MenuPageContainer from './MenuPageContainer';
 import EditFields from './EditFields';
 import FormBuilder from './FormBuilder';
+import EditForms from './EditForms';
 
 var Home = () => {
     return (
@@ -19,6 +20,7 @@ const App = () => (
             <Route path={'/create-field'} component={CreateField}/>
             <Route path={'/edit-fields'} component={EditFields}/>
             <Route path={'/form-builder'} component={FormBuilder}/>
+            <Route path={'/edit-forms'} component={EditForms}/>
         </MenuPageContainer>
     </HashRouter>
 );

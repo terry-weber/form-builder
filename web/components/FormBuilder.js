@@ -3,6 +3,7 @@ import {Link} from 'react-router-dom';
 import { DropTarget, DragDropContext, DragSource } from 'react-dnd';
 import HTML5Backend from 'react-dnd-html5-backend';
 import _ from 'underscore';
+import uuid from './../util/uuid';
 
 var ItemTypes = {
     FORM_ELEMENT: 'formElement',
@@ -24,7 +25,6 @@ function observe(o) {
     }
 
     observer = o;
-    emitChange();
 
     return () => {
         observer = null;
@@ -95,6 +95,8 @@ class FormElement extends Component {
             }
             return found;
         });
+
+        console.log(elements)
 
         for(let i=0; i<elements.length; i++) {
             if(elements[i].order > order) {
@@ -267,12 +269,14 @@ export default class FormBuilderWrapper extends Component {
             fields: [],
             title: '',
             error: false,
-            nameRepeated: false
+            nameRepeated: false,
+            isEdit: false
         };
-        this.unobserve = observe(this.handleChange.bind(this))
     }
 
     componentDidMount() {
+        this.unobserve = observe(this.handleChange.bind(this));
+
         try {
             var fields = JSON.parse(localStorage.getItem('fields'));
         }
@@ -280,14 +284,45 @@ export default class FormBuilderWrapper extends Component {
 
         if(Object.prototype.toString.call(fields) !== '[object Array]') {
             fields = [];
-            localStorage.setItem('fields', fields);
+            localStorage.setItem('fields', JSON.stringify(fields));
         }
 
         this.setState({fields: fields});
+
+        if(this.props.match.hasOwnProperty('params') && this.props.match.params.hasOwnProperty('id')) {
+            this.setState({isEdit: true});
+            const schemas = JSON.parse(localStorage.getItem('formSchemas'));
+            const schema = _.find(schemas, (item) => {
+                return item._id == decodeURIComponent(this.props.match.params.id);
+            });
+
+            console.log(schema);
+            let formElements = [];
+
+            for(let i=0; i<schema.fields.length; i++) {
+                let field = _.find(fields, (item) => {
+                    return item._id == schema.fields[i]['_id'];
+                });
+
+                console.log(field)
+                field['order'] = schema.fields[i].order;
+                formElements.push(field);
+            }
+
+            this.setState({
+                title: schema.title,
+                formElements: formElements
+            });
+
+            elements = formElements;
+
+            console.log('dfdjfhdh')
+        }
+
     }
 
     handleChange(formElements) {
-        this.setState({formElements: formElements})
+        this.setState({formElements: formElements});
     }
 
     titleChange(e) {
@@ -341,21 +376,92 @@ export default class FormBuilderWrapper extends Component {
         const schemaFields = this.state.formElements.map((item, index) => {
            return {
                order: item.order,
-               id: item._id
+               _id: item._id
            }
         });
 
         let formSchema = {
             title: this.state.title,
-            fields: schemaFields
+            fields: schemaFields,
+            _id: uuid()
         };
 
         schemas.push(formSchema);
+
+        console.log(schemas)
         localStorage.setItem('formSchemas', JSON.stringify(schemas));
+        this.props.history.push('/edit-forms');
 
     }
 
+    updateLayout(e) {
+        let hasRequiredField = false;
+        for(let i=0; i<this.state.formElements.length; i++) {
+            if(this.state.formElements[i].required) {
+                hasRequiredField = true;
+                break;
+            }
+        }
+
+        if(this.state.title.trim() == '' || !hasRequiredField) {
+            this.setState({error: true}, () => {
+                setTimeout(() => {
+                    this.setState({error: false})
+                }, 3000);
+            });
+            return;
+        }
+
+        //get schemas from local storage
+        try {
+            var schemas = JSON.parse(localStorage.getItem('formSchemas'));
+        }
+        catch(err) {
+            return;
+        }
+
+        if(Object.prototype.toString.call(schemas) === '[object Array]') {
+            for(var i=0; i<schemas.length; i++) {
+                if(this.state.title.toLowerCase().trim() == schemas[i].title && this.props.match.params.id != schemas[i]._id) {
+                    this.setState({nameRepeated: true}, () => {
+                        setTimeout(() => {
+                            this.setState({nameRepeated: false})
+                        }, 3000);
+                    });
+                    return;
+                }
+            }
+
+            const schemaFields = this.state.formElements.map((item, index) => {
+                return {
+                    order: item.order,
+                    _id: item._id
+                }
+            });
+
+            let formSchema = {
+                title: this.state.title,
+                fields: schemaFields,
+                _id: uuid()
+            };
+
+            for(var i=0; i<schemas.length; i++) {
+                if(schemas[i]['_id'] == this.props.match.params['id']) {
+                    schemas[i] = formSchema;
+                    break;
+                }
+            }
+        }
+        else {
+            throw 'formSchemas not defined';
+        }
+
+        localStorage.setItem('formSchemas', JSON.stringify(schemas));
+        this.props.history.push('/edit-forms');
+    }
+
     componentWillUnmount() {
+        elements = [];
         this.unobserve();
     }
 
@@ -371,7 +477,7 @@ export default class FormBuilderWrapper extends Component {
                     />
                 </div>
                 <div style={{marginTop: "10px", marginLeft: "20%"}}>
-                    <button className="btn btn-primary" onClick={this.saveLayout.bind(this)}>Save</button>
+                    <button className="btn btn-primary" onClick={this.state.isEdit ? this.updateLayout.bind(this) : this.saveLayout.bind(this)}>Save</button>
                     <div style={{color: "red", display: this.state.error ? 'block' : 'none'}}>form must have a title and at least one required field</div>
                     <div style={{color: "red", display: this.state.nameRepeated ? 'block' : 'none'}}>already a form layout with this title</div>
                 </div>

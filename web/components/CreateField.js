@@ -101,7 +101,7 @@ export default class CreateField extends React.Component {
     }
 
     updateField(e) {
-        if(this.state.name == '' || this.state.label == '') {
+        if(this.state.name.trim() == '' || this.state.label.trim() == '') {
             this.setState({error: true});
             setTimeout(() => {this.setState({error: false})}, 3000)
             return;
@@ -121,6 +121,26 @@ export default class CreateField extends React.Component {
         }
 
         if(Object.prototype.toString.call(fields) === '[object Array]') {
+            if(Object.prototype.toString.call(fields) === '[object Array]') {
+                for(var i=0; i<fields.length; i++) {
+                    if(fields[i]['name'].toLowerCase().trim() == updateFields.name.toLowerCase().trim() && fields[i]['_id'] != this.props.match.params.id) {
+                        this.setState({nameUsed: true});
+                        setTimeout(() => {
+                            this.setState({nameUsed: false});
+                        }, 3000);
+                        return;
+                    }
+
+                    if(fields[i]['label'].toLowerCase().trim() == updateFields.label.toLowerCase().trim() && fields[i]['_id'] != this.props.match.params.id) {
+                        this.setState({labelUsed: true});
+                        setTimeout(() => {
+                            this.setState({labelUsed: false});
+                        }, 3000);
+                        return;
+                    }
+                }
+            }
+
             for(var i=0; i<fields.length; i++) {
                 if(fields[i]['_id'] == this.props.match.params['id']) {
                     fields[i] = Object.assign(fields[i], updateFields);
@@ -134,7 +154,7 @@ export default class CreateField extends React.Component {
 
         localStorage.setItem('fields', JSON.stringify(fields));
 
-        this.props.history.push('/edit-fields')
+        this.props.history.push('/edit-fields');
     }
 
 
@@ -177,7 +197,13 @@ export default class CreateField extends React.Component {
 
                 <div className="row">
                     <div className="col-md-4 col-sm-12">
-                        <button style={{marginTop: "10px"}} className="btn btn-primary" onClick={this.state.isEdit ? this.updateField.bind(this) : this.submitField.bind(this)}>Submit</button>
+                        <button
+                            style={{marginTop: "10px"}}
+                            className="btn btn-primary"
+                            onClick={this.state.isEdit ? this.updateField.bind(this) : this.submitField.bind(this)}
+                        >
+                            Submit
+                        </button>
                     </div>
                 </div>
 

@@ -17,7 +17,7 @@ export default (props) => {
                 Forms
                 <ul>
                     <li><Link to={"/form-builder"}>Create New Form Layout</Link></li>
-                    <li><Link to={"/"}>Edit Form Layouts</Link></li>
+                    <li><Link to={"/edit-forms"}>Edit Form Layouts</Link></li>
                     <li><Link to={"/"}>Created Forms</Link></li>
                 </ul>
             </div>

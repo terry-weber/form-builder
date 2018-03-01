@@ -18,7 +18,7 @@ export default class FieldsList extends React.Component {
 
         if(Object.prototype.toString.call(fields) !== '[object Array]') {
             fields = [];
-            localStorage.setItem('fields', fields);
+            localStorage.setItem('fields', JSON.stringify(fields));
         }
 
         this.setState({fields: fields});

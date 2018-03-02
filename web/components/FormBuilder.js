@@ -315,8 +315,6 @@ export default class FormBuilderWrapper extends Component {
             });
 
             elements = formElements;
-
-            console.log('dfdjfhdh')
         }
 
     }
@@ -390,8 +388,9 @@ export default class FormBuilderWrapper extends Component {
 
         console.log(schemas)
         localStorage.setItem('formSchemas', JSON.stringify(schemas));
+        console.log(this.props)
+        this.props.setSchemas();
         this.props.history.push('/edit-forms');
-
     }
 
     updateLayout(e) {
@@ -457,6 +456,7 @@ export default class FormBuilderWrapper extends Component {
         }
 
         localStorage.setItem('formSchemas', JSON.stringify(schemas));
+        this.props.setSchemas();
         this.props.history.push('/edit-forms');
     }
 

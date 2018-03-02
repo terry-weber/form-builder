@@ -1,11 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Link, Switch,  HashRouter} from "react-router-dom";
-import Table from './Table';
 import CreateField from './CreateField';
 import MenuPageContainer from './MenuPageContainer';
 import EditFields from './EditFields';
 import FormBuilder from './FormBuilder';
 import EditForms from './EditForms';
+import Forms from './Forms'
 
 var Home = () => {
     return (
@@ -13,16 +13,46 @@ var Home = () => {
     )
 };
 
-const App = () => (
-    <HashRouter>
-        <MenuPageContainer>
-            <Route path={'/'} component={Home} exact/>
-            <Route path={'/create-field'} component={CreateField}/>
-            <Route path={'/edit-fields'} component={EditFields}/>
-            <Route path={'/form-builder'} component={FormBuilder}/>
-            <Route path={'/edit-forms'} component={EditForms}/>
-        </MenuPageContainer>
-    </HashRouter>
-);
+export default class App extends React.Component {
+    constructor() {
+        super();
+        this.state = {
+            formSchemas: []
+        }
 
-export default App;
+        this.setSchemas = this.setSchemas.bind(this);
+    }
+
+    setSchemas() {
+        try {
+            var schemas = JSON.parse(localStorage.getItem('formSchemas'));
+        }
+        catch(err) {}
+
+        if(Object.prototype.toString.call(schemas) !== '[object Array]') {
+            schemas  = [];
+            localStorage.setItem('formSchemas', JSON.stringify(schemas));
+        }
+
+        this.setState({formSchemas: schemas});
+    }
+
+    componentDidMount() {
+        this.setSchemas();
+    }
+
+    render() {
+        return (
+            <HashRouter>
+                <MenuPageContainer formSchemas={this.state.formSchemas}>
+                    <Route path={'/'} component={Home} exact/>
+                    <Route path={'/create-field'} component={CreateField}/>
+                    <Route path={'/edit-fields'} component={EditFields}/>
+                    <Route path={'/form-builder'} render={routeProps => <FormBuilder setSchemas={this.setSchemas} {...routeProps}/>}/>
+                    <Route path={'/edit-forms'} render={routeProps => <EditForms setSchemas={this.setSchemas} {...routeProps}/>}/>
+                    <Route path={'/forms/:id'} component={Forms}/>
+                </MenuPageContainer>
+            </HashRouter>
+        )
+    }
+};

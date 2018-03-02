@@ -6,7 +6,7 @@ export default class SchemasList extends React.Component {
         super();
 
         this.state = {
-          schemas: []
+            formSchemas: []
         };
     }
 
@@ -21,15 +21,15 @@ export default class SchemasList extends React.Component {
             localStorage.setItem('formSchemas', JSON.stringify(schemas));
         }
 
-        this.setState({schemas: schemas});
+        this.setState({formSchemas: schemas});
 
     }
 
     render() {
         return(
             <ul>
-                {this.state.schemas.length ?
-                    this.state.schemas.map((item, index) => {
+                {this.state.formSchemas.length ?
+                    this.state.formSchemas.map((item, index) => {
                         return <li key={index}><Link to={'/edit-forms/' + encodeURIComponent(item._id)}>{item.title}</Link></li>
                     })
                     :

@@ -12,6 +12,7 @@ export default class FormTable extends React.Component {
 
         this.getForms = this.getForms.bind(this);
     }
+
     gotoCreate() {
         this.props.history.push('/forms/'+this.props.match.params.id+'/create');
     }
@@ -22,7 +23,6 @@ export default class FormTable extends React.Component {
 
     componentDidUpdate(prevProps) {
         if(this.props.match.params.id != prevProps.match.params.id) {
-            console.log('dkfjkdfjk')
             this.getForms();
         }
     }
@@ -33,11 +33,15 @@ export default class FormTable extends React.Component {
         }
         catch(err) {}
 
-        console.log(forms)
-
         if(Object.prototype.toString.call(forms) === '[object Object]' && forms[this.props.match.params.id] != null) {
-            console.log(forms[this.props.match.params.id])
-            this.setState({forms: forms[this.props.match.params.id]})
+            const formResult = forms[this.props.match.params.id].map((item, index) => {
+                let obj = {};
+                item.map((item, index) => {
+                    obj[item._id] = item.value;
+                });
+                return obj;
+            });
+            this.setState({forms: formResult});
         }
         else {
             this.setState({forms: []});
@@ -55,13 +59,10 @@ export default class FormTable extends React.Component {
                 <h2>{this.props.title}</h2>
                 <hr/>
                 <BootstrapTable data={this.state.forms}>
-                    <TableHeaderColumn isKey dataField='id' hidden/>
+                    <TableHeaderColumn isKey dataField='_id' hidden/>
                     {
                         sortedFormFields.map((item, index) => {
-                            let field = _.find(this.props.fields, (field) => {
-                               return item._id ==  field._id;
-                            });
-                            return <TableHeaderColumn key={index} dataField={field._id}>{field.label}</TableHeaderColumn>
+                            return <TableHeaderColumn key={index} dataField={item._id}>{item.label}</TableHeaderColumn>
                         })
                     }
                 </BootstrapTable>

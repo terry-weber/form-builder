@@ -9,22 +9,11 @@ export default class Form extends React.Component {
     constructor(props) {
         super(props);
 
-        let schema = props.getSchema();
+        this.state = {requiredError: false};
 
-        let obj = {};
-        for(let i=0; i<schema.fields.length; i++) {
-            obj[schema.fields[i]._id] = '';
-        }
-
-        obj['requiredError'] = false;
-
-        this.state = obj;
-
-        this.changeState = this.changeState.bind(this);
-        this.changeStateInteger= this.changeStateInteger.bind(this);
         this.submitForm = this.submitForm.bind(this);
 
-        //workaround for react datetime event handlers not receiving event object
+        //workaround for react-datetime event handlers not receiving event object
         this.datetimeChangeFunctions = {};
         this.datetimeBlurFunctions = {};
 
@@ -33,49 +22,18 @@ export default class Form extends React.Component {
     componentDidMount() {
     }
 
-    changeState(e) {
-        var obj = {};
-        obj[e.target.id] = e.target.value;
-        this.setState(obj);
-    }
-
-    changeStateInteger(valueAsNumber, valueAsString, input) {
-        var obj = {};
-        obj[input.id] = valueAsNumber;
-        this.setState(obj);
-    }
-
     submitForm(e) {
-        let result = {};
-        for(let key in this.state) {
-            if(key == 'requiredError') {
-                continue;
-            }
+        console.log(this.props.inputValues);
 
-            let field = _.find(this.props.fields, (item) => {
-                return item._id == key;
-            });
-
-            let value = this.state[key];
-            if(field.dataType == 'datetime' && Object.prototype.toString.call(value) != '[object String]') {
-                value = value.format();
-            }
-
-            console.log(value)
-            console.log(Object.prototype.toString.call(value))
-
-            if(Object.prototype.toString.call(value) != '[object Number]' && value.trim() == '' && field.required) {
+        for(let i=0; i<this.props.inputValues.length; i++) {
+            if(this.props.inputValues[i].value.toString().trim() == '' && this.props.inputValues[i].required) {
                 this.setState({requiredError: true}, () => {
                     setTimeout(()=>{this.setState({requiredError: false})}, 3000);
                 });
 
                 return;
             }
-
-            result[key] = value;
         }
-
-        console.log(result)
 
         try {
             var forms = JSON.parse(localStorage.getItem('forms'));
@@ -86,52 +44,57 @@ export default class Form extends React.Component {
             forms = {};
         }
 
-        if(forms[this.props.match.params.id] == null) {
-            forms[this.props.match.params.id] = [];
+        if(this.props.match.params.hasOwnProperty('formId')) {
+            for(let i=0; i<forms[this.props.match.params.id].length; i++) {
+                if(forms[this.props.match.params.id][i]._id == this.props.match.params.formId) {
+                    forms[this.props.match.params.id].splice(i, 1);
+                    break;
+                }
+            }
         }
 
-        forms[this.props.match.params.id].push(result);
+        if(forms.hasOwnProperty(this.props.match.params.id)) {
+            forms[this.props.match.params.id].push(this.props.inputValues);
+        }
+        else {
+            forms[this.props.match.params.id] = [this.props.inputValues];
+        }
+
         localStorage.setItem('forms', JSON.stringify(forms));
+
         this.props.history.push('/forms/'+this.props.match.params.id);
     }
 
     render() {
-        const sortedFields = _.sortBy(this.props.formFields, (item) => {
-            return item.order;
-        });
 
-        const inputs = sortedFields.map((schemaItem, index) => {
-            //get field info from schema id
-            var item = _.find(this.props.fields, (field) => {
-                return schemaItem._id == field._id;
-            });
-
+        const inputs = this.props.inputValues.map((item, index) => {
             //string dataType
-            var input = <input className="form-control" type="text" id={item._id} onChange={this.changeState} value={this.state[item._id]}/>;
+            var input = <input className="form-control" type="text" onChange={(e)=>this.props.setInputValue(index, e.target.value)} value={item.value}/>;
             //text dataType
             if(item.dataType == "text") {
-                input = <input className="form-control" id={item._id} type="text-area" onChange={this.changeState} value={this.state[item._id]}/>;
+                input = <input className="form-control" type="text-area" onChange={(e)=>this.props.setInputValue(index, e.target.value)} value={item.value}/>;
             }
             //integer dataType
             else if(item.dataType == "integer") {
-                input  = <NumericInput value={this.state[item._id]} className="form-control" id={item._id} parse={parseInt} onChange={this.changeStateInteger} value={this.state[item._id]}/>;
+                input  = <NumericInput value={item.value} className="form-control" parse={parseInt} onChange={(valueAsNumber, valueAsString, input) => {this.props.setInputValue(index, valueAsNumber)}}/>;
             }
             //datetime dataType
             else if(item.dataType == "datetime") {
                 //create change function with id as key
                 this.datetimeChangeFunctions[item._id] = (momentObject) => {
-                    var obj = {};
-                    obj[item._id] = momentObject;
-                    this.setState(obj);
+                    if(Object.prototype.toString.call(momentObject) == '[object String]') {
+                        this.props.setInputValue(index, momentObject);
+                    }
+                    else {
+                        this.props.setInputValue(index, momentObject.format('YYYY-MM-DD HH:mm:ss'))
+                    }
                 };
 
                 //create blur function with id as key
                 this.datetimeBlurFunctions[item._id] = (momentObject) => {
                     //set fields to blank if not moment object
                     if(Object.prototype.toString.call(momentObject) == '[object String]') {
-                        var obj = {};
-                        obj[item._id] = '';
-                        this.setState(obj);
+                        this.props.setInputValue(index, '');
                     }
                 };
 
@@ -139,13 +102,20 @@ export default class Form extends React.Component {
                     <Datetime
                         onBlur={this.datetimeBlurFunctions[item._id].bind(this)}
                         onChange={this.datetimeChangeFunctions[item._id].bind(this)}
-                        value={this.state[item._id]}
+                        dateFormat={'YYYY-MM-DD'}
+                        timeFormat={'HH:mm:ss'}
+                        value={item.value}
                     />
                 );
             }
             //boolean datatype
             else if(item.dataType == "boolean") {
-                input = <input type="checkbox" id={item._id} className="checkbox" onChange={this.changeState} value={this.state[item._id]}/>;
+                input = <input
+                    type="checkbox"
+                    className="checkbox"
+                    onChange={(e)=>this.props.setInputValue(index,e.target.checked)}
+                    checked={item.value}
+                />;
             }
 
             let asterisk = '';

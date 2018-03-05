@@ -13,15 +13,49 @@ export default class Form extends React.Component {
 
         this.submitForm = this.submitForm.bind(this);
 
+        this.initializeInputs = this.initializeInputs.bind(this);
         //workaround for react-datetime event handlers not receiving event object
         this.datetimeChangeFunctions = {};
         this.datetimeBlurFunctions = {};
 
     }
 
-    submitForm(e) {
-        console.log(this.props.inputValues);
+    componentDidMount() {
+        this.props.setSchema(this.initializeInputs)
+    }
 
+    initializeInputs() {
+        if(this.props.match.params.hasOwnProperty('formId')) {
+            try {
+                var forms = JSON.parse(localStorage.getItem('forms'));
+            }
+            catch(err) {}
+
+            if(Object.prototype.toString.call(forms) !== '[object Object]') {
+                throw 'form not defined';
+            }
+        }
+
+        this.props.setInputValues(
+            this.props.formFields.map((item, index) => {
+                let value = '';
+                if(this.props.match.params.hasOwnProperty('formId')) {
+                    value = forms[this.props.match.params.id][this.props.match.params.formId][item._id]
+                }
+                else {
+                    if (item.dataType == 'boolean') {
+                        value = false;
+                    }
+                }
+
+                return Object.assign(item, {value: value});
+            })
+        );
+
+    }
+
+    submitForm(e) {
+        console.log(this.props.inputValues)
         for(let i=0; i<this.props.inputValues.length; i++) {
             if(this.props.inputValues[i].value.toString().trim() == '' && this.props.inputValues[i].required) {
                 this.setState({requiredError: true}, () => {
@@ -41,22 +75,18 @@ export default class Form extends React.Component {
             forms = {};
         }
 
-        if(this.props.match.params.hasOwnProperty('formId')) {
-            for(let i=0; i<forms[this.props.match.params.id].length; i++) {
-                if(forms[this.props.match.params.id][i]._id == this.props.match.params.formId) {
-                    forms[this.props.match.params.id].splice(i, 1);
-                    break;
-                }
-            }
-        }
-
         let inputResult = {};
         this.props.inputValues.map((item) => {
             inputResult[item._id] = item.value;
         });
 
         if(forms.hasOwnProperty(this.props.match.params.id)) {
-            forms[this.props.match.params.id].push(inputResult);
+            if(this.props.match.params.hasOwnProperty('formId')) {
+                forms[this.props.match.params.id][this.props.match.params.formId] = inputResult;
+            }
+            else {
+                forms[this.props.match.params.id].push(inputResult);
+            }
         }
         else {
             forms[this.props.match.params.id] = [inputResult];

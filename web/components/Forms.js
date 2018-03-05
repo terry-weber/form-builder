@@ -15,14 +15,18 @@ export default class extends React.Component {
             inputValues: []
         };
 
-        this.setProps = this.setProps.bind(this);
         this.setSchema = this.setSchema.bind(this);
         this.getSchema = this.getSchema.bind(this);
-        this.initializeInputValues = this.initializeInputValues.bind(this);
         this.setInputValue = this.setInputValue.bind(this);
+        this.setInputValues = this.setInputValues.bind(this);
     }
 
-    setProps() {
+    setSchema(callback) {
+        let schema = this.getSchema();
+        this.setState({formFields: schema.fields, title: schema.title}, callback);
+    }
+
+    getSchema() {
         try {
             var fields = JSON.parse(localStorage.getItem('fields'));
         }
@@ -32,17 +36,6 @@ export default class extends React.Component {
             throw "fields not defined";
         }
 
-        this.setState({
-            fields: fields
-        }, this.setSchema);
-    }
-
-    setSchema() {
-        let schema = this.getSchema();
-        this.setState({formFields: schema.fields, title: schema.title}, this.initializeInputValues);
-    }
-
-    getSchema() {
         try {
             var schemas = JSON.parse(localStorage.getItem('formSchemas'));
         }
@@ -61,7 +54,7 @@ export default class extends React.Component {
         }
 
         schema.fields = schema.fields.map((schemaItem) => {
-            let field = _.find(this.state.fields, (fieldItem) => {
+            let field = _.find(fields, (fieldItem) => {
                return schemaItem._id == fieldItem._id;
             });
 
@@ -75,31 +68,6 @@ export default class extends React.Component {
         return schema;
     }
 
-    initializeInputValues() {
-        if(this.props.match.hasOwnProperty('formId')) {
-            try {
-                var forms = JSON.parse(localStorage.getItem('forms'));
-            }
-            catch(err) {}
-
-            if(Object.prototype.toString.call(schemas) !== '[object Object]') {
-                throw 'form not defined';
-            }
-
-            this.setState({inputValues: forms[this.props.match.params.id]});
-        }
-        else {
-            this.setState({
-                inputValues: this.state.formFields.map((item, index) => {
-                    if (item.dataType == 'boolean') {
-                        return Object.assign(item, {value: false});
-                    }
-                    return Object.assign(item, {value: ''});
-                })
-            });
-        }
-    }
-
     setInputValue(formIndex, value) {
         this.setState({
             inputValues: this.state.inputValues.map((item, valueIndex) => {
@@ -111,15 +79,8 @@ export default class extends React.Component {
         });
     }
 
-    componentDidMount() {
-        this.setProps();
-    }
-
-
-    componentDidUpdate(prevProps, prevState) {
-        if(this.props.match.params.id != prevProps.match.params.id) {
-            this.setSchema();
-        }
+    setInputValues(inputValues) {
+        this.setState({inputValues: inputValues});
     }
 
     render() {
@@ -131,6 +92,21 @@ export default class extends React.Component {
                        title={this.state.title}
                        setInputValue={this.setInputValue}
                        inputValues={this.state.inputValues}
+                       setSchema={this.setSchema}
+                       setInputValues={this.setInputValues}
+                       formFields={this.state.formFields}
+                       />
+                   );
+               }}/>
+               <Route path='/forms/:id/edit/:formId' render={routeParams => {
+                   return (<Form
+                           {...routeParams}
+                           title={this.state.title}
+                           setInputValue={this.setInputValue}
+                           inputValues={this.state.inputValues}
+                           setSchema={this.setSchema}
+                           setInputValues={this.setInputValues}
+                           formFields={this.state.formFields}
                        />
                    );
                }}/>
@@ -140,6 +116,7 @@ export default class extends React.Component {
                               {...routeParams}
                               formFields={this.state.formFields}
                               title={this.state.title}
+                              setSchema={this.setSchema}
                               />
                           );
                       }}/>

@@ -33,7 +33,7 @@ export default class SchemasList extends React.Component {
                         return <li key={index}><Link to={'/edit-forms/' + encodeURIComponent(item._id)}>{item.title}</Link></li>
                     })
                     :
-                    <div>no form layouts defined. <Link to="/create-form">define a form layout</Link></div>
+                    <div>no form layouts defined. <Link to="/form-builder">define a form layout</Link></div>
                 }
             </ul>
         )

@@ -14,7 +14,7 @@ var Home = () => {
             <ol>
                 <li>Define Fields</li>
                 <li>Define Form Layout</li>
-                <li>Create Forms</li>
+                <li>Create and Edit Forms</li>
             </ol>
         </div>
     )

@@ -1,4 +1,5 @@
 import React from 'react';
+import {Link} from 'react-router-dom';
 import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
 import _ from 'underscore';
 
@@ -18,12 +19,12 @@ export default class FormTable extends React.Component {
     }
 
     componentDidMount() {
-        this.getForms();
+        this.props.setSchema(this.getForms);
     }
 
     componentDidUpdate(prevProps) {
         if(this.props.match.params.id != prevProps.match.params.id) {
-            this.getForms();
+            this.props.setSchema(this.getForms);
         }
     }
 
@@ -35,13 +36,15 @@ export default class FormTable extends React.Component {
 
         if(Object.prototype.toString.call(forms) === '[object Object]' && forms[this.props.match.params.id] != null) {
             //fill in fields as blank if fields were added to layout after form creation
-            let formResult = forms[this.props.match.params.id].map((item) => {
+            let formResult = forms[this.props.match.params.id].map((item, index) => {
                 for(let i=0; i<this.props.formFields.length; i++) {
                     if(item.hasOwnProperty(this.props.formFields[i]._id)) {
                         continue;
                     }
                     item[this.props.formFields[i]._id] = '';
                 }
+
+                item['_id'] = index;
 
                 return item;
             });
@@ -51,6 +54,10 @@ export default class FormTable extends React.Component {
         else {
             this.setState({forms: []});
         }
+    }
+
+    formatEdit(cell, row) {
+        return <Link to={"/forms/"+this.props.match.params.id+"/edit/" + row._id}>edit</Link>
     }
 
     render() {
@@ -65,6 +72,7 @@ export default class FormTable extends React.Component {
                 <hr/>
                 <BootstrapTable data={this.state.forms}>
                     <TableHeaderColumn isKey dataField='_id' hidden/>
+                    <TableHeaderColumn width='60px' dataField={null} dataFormat={this.formatEdit.bind(this)} >Edit</TableHeaderColumn>
                     {
                         sortedFormFields.map((item, index) => {
                             return <TableHeaderColumn key={index} dataField={item._id}>{item.label}</TableHeaderColumn>

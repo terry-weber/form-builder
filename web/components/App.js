@@ -9,7 +9,14 @@ import Forms from './Forms'
 
 var Home = () => {
     return (
-        <h1>edit</h1>
+        <div>
+            <h1>Form Builder</h1>
+            <ol>
+                <li>Define Fields</li>
+                <li>Define Form Layout</li>
+                <li>Create Forms</li>
+            </ol>
+        </div>
     )
 };
 
@@ -18,7 +25,7 @@ export default class App extends React.Component {
         super();
         this.state = {
             formSchemas: []
-        }
+        };
 
         this.setSchemas = this.setSchemas.bind(this);
     }

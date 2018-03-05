@@ -19,9 +19,6 @@ export default class Form extends React.Component {
 
     }
 
-    componentDidMount() {
-    }
-
     submitForm(e) {
         console.log(this.props.inputValues);
 
@@ -53,11 +50,16 @@ export default class Form extends React.Component {
             }
         }
 
+        let inputResult = {};
+        this.props.inputValues.map((item) => {
+            inputResult[item._id] = item.value;
+        });
+
         if(forms.hasOwnProperty(this.props.match.params.id)) {
-            forms[this.props.match.params.id].push(this.props.inputValues);
+            forms[this.props.match.params.id].push(inputResult);
         }
         else {
-            forms[this.props.match.params.id] = [this.props.inputValues];
+            forms[this.props.match.params.id] = [inputResult];
         }
 
         localStorage.setItem('forms', JSON.stringify(forms));

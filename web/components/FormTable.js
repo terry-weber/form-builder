@@ -34,13 +34,18 @@ export default class FormTable extends React.Component {
         catch(err) {}
 
         if(Object.prototype.toString.call(forms) === '[object Object]' && forms[this.props.match.params.id] != null) {
-            const formResult = forms[this.props.match.params.id].map((item, index) => {
-                let obj = {};
-                item.map((item, index) => {
-                    obj[item._id] = item.value;
-                });
-                return obj;
+            //fill in fields as blank if fields were added to layout after form creation
+            let formResult = forms[this.props.match.params.id].map((item) => {
+                for(let i=0; i<this.props.formFields.length; i++) {
+                    if(item.hasOwnProperty(this.props.formFields[i]._id)) {
+                        continue;
+                    }
+                    item[this.props.formFields[i]._id] = '';
+                }
+
+                return item;
             });
+
             this.setState({forms: formResult});
         }
         else {

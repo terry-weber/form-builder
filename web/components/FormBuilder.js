@@ -441,7 +441,7 @@ export default class FormBuilderWrapper extends Component {
             let formSchema = {
                 title: this.state.title,
                 fields: schemaFields,
-                _id: uuid()
+                _id: this.props.match.params.id
             };
 
             for(var i=0; i<schemas.length; i++) {

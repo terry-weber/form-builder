@@ -22,13 +22,12 @@ export default class CreateField extends React.Component {
     componentDidMount() {
         //if editing a field, pull data from local storage
         if(this.props.match.hasOwnProperty('params') && this.props.match.params.hasOwnProperty('id')) {
-            this.setState({isEdit: true});
-
             const fields = JSON.parse(localStorage.getItem('fields'));
             const field = _.find(fields, (item) => {
                 return item._id == decodeURIComponent(this.props.match.params.id);
             });
-            this.setState(field);
+
+            this.setState(field, ()=>{this.setState({isEdit: true})});
         }
     }
 
@@ -164,7 +163,7 @@ export default class CreateField extends React.Component {
                 <div className="row">
                     <div className="col-md-4 col-sm-12">
                         <label>Data type</label>
-                        <select disabled={this.state.isEdit} className="form-control" onChange={this.dataTypeChange.bind(this)}>
+                        <select disabled={this.state.isEdit} className="form-control" onChange={this.dataTypeChange.bind(this)} value={this.state.dataType}>
                             <option>string</option>
                             <option>text</option>
                             <option>integer</option>

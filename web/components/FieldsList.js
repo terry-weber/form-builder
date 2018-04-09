@@ -26,16 +26,18 @@ export default class FieldsList extends React.Component {
 
     render() {
         return (
-            <ul>
-                {this.state.fields.length ?
-                    this.state.fields.map((item, index) => {
-                        return <li key={index}><Link to={'/edit-fields/' + encodeURIComponent(item._id)}>{item.name}</Link></li>
-                    })
-                    :
-                    <div>no fields defined. <Link to="/create-field">define a field</Link></div>
-                }
-            </ul>
-
+            <div>
+                <h4>Defined Fields</h4>
+                <ul>
+                    {this.state.fields.length ?
+                        this.state.fields.map((item, index) => {
+                            return <li key={index}><Link to={'/edit-fields/' + encodeURIComponent(item._id)}>{item.name}</Link></li>
+                        })
+                        :
+                        <div>no fields defined. <Link to="/create-field">define a field</Link></div>
+                    }
+                </ul>
+            </div>
         )
     }
 }

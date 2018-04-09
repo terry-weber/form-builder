@@ -27,15 +27,18 @@ export default class SchemasList extends React.Component {
 
     render() {
         return(
-            <ul>
-                {this.state.formSchemas.length ?
-                    this.state.formSchemas.map((item, index) => {
-                        return <li key={index}><Link to={'/edit-forms/' + encodeURIComponent(item._id)}>{item.title}</Link></li>
-                    })
-                    :
-                    <div>no form layouts defined. <Link to="/form-builder">define a form layout</Link></div>
-                }
-            </ul>
+            <div>
+                <h4>Form Layouts</h4>
+                <ul>
+                    {this.state.formSchemas.length ?
+                        this.state.formSchemas.map((item, index) => {
+                            return <li key={index}><Link to={'/edit-forms/' + encodeURIComponent(item._id)}>{item.title}</Link></li>
+                        })
+                        :
+                        <div>no form layouts defined. <Link to="/form-builder">define a form layout</Link></div>
+                    }
+                </ul>
+            </div>
         )
     }
 }

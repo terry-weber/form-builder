@@ -25,6 +25,8 @@ export default class Form extends React.Component {
     }
 
     initializeInputs() {
+
+        /* if there is id in url, check that there is corresponding stored form with id */
         if(this.props.match.params.hasOwnProperty('formId')) {
             try {
                 var forms = JSON.parse(localStorage.getItem('forms'));
@@ -39,6 +41,8 @@ export default class Form extends React.Component {
         this.props.setInputValues(
             this.props.formFields.map((item, index) => {
                 let value = '';
+
+                /* if editing a form based on id in url, get value from storage */
                 if(this.props.match.params.hasOwnProperty('formId')) {
                     value = forms[this.props.match.params.id][this.props.match.params.formId][item._id]
                 }
@@ -55,7 +59,7 @@ export default class Form extends React.Component {
     }
 
     submitForm(e) {
-        console.log(this.props.inputValues)
+        /* check for required fields */
         for(let i=0; i<this.props.inputValues.length; i++) {
             if(this.props.inputValues[i].value.toString().trim() == '' && this.props.inputValues[i].required) {
                 this.setState({requiredError: true}, () => {
@@ -66,6 +70,7 @@ export default class Form extends React.Component {
             }
         }
 
+        /* initialize local storage object for storing forms if none exists */
         try {
             var forms = JSON.parse(localStorage.getItem('forms'));
         }
@@ -75,12 +80,14 @@ export default class Form extends React.Component {
             forms = {};
         }
 
+        /* store form field values with field ids as keys */
         let inputResult = {};
         this.props.inputValues.map((item) => {
             inputResult[item._id] = item.value;
         });
 
         if(forms.hasOwnProperty(this.props.match.params.id)) {
+            /* if editing form, update existing object */
             if(this.props.match.params.hasOwnProperty('formId')) {
                 forms[this.props.match.params.id][this.props.match.params.formId] = inputResult;
             }
@@ -88,6 +95,7 @@ export default class Form extends React.Component {
                 forms[this.props.match.params.id].push(inputResult);
             }
         }
+        /* create array to store forms of this type */
         else {
             forms[this.props.match.params.id] = [inputResult];
         }
@@ -112,7 +120,7 @@ export default class Form extends React.Component {
             }
             //datetime dataType
             else if(item.dataType == "datetime") {
-                //create change function with id as key
+                /* create change function with field id as key */
                 this.datetimeChangeFunctions[item._id] = (momentObject) => {
                     if(Object.prototype.toString.call(momentObject) == '[object String]') {
                         this.props.setInputValue(index, momentObject);
@@ -122,9 +130,9 @@ export default class Form extends React.Component {
                     }
                 };
 
-                //create blur function with id as key
+                /* create blur function with id as key */
                 this.datetimeBlurFunctions[item._id] = (momentObject) => {
-                    //set fields to blank if not moment object
+                    /* set field to blank if not moment object (invalid date) */
                     if(Object.prototype.toString.call(momentObject) == '[object String]') {
                         this.props.setInputValue(index, '');
                     }
@@ -150,6 +158,7 @@ export default class Form extends React.Component {
                 />;
             }
 
+            /* add asterisk to label if required */
             let asterisk = '';
             if(item.required) {
                 asterisk = '*';

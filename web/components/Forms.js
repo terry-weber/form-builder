@@ -68,6 +68,7 @@ export default class extends React.Component {
         return schema;
     }
 
+    /* used as input change function */
     setInputValue(formIndex, value) {
         this.setState({
             inputValues: this.state.inputValues.map((item, valueIndex) => {
@@ -79,6 +80,7 @@ export default class extends React.Component {
         });
     }
 
+    /* used to initialize input values */
     setInputValues(inputValues) {
         this.setState({inputValues: inputValues});
     }
